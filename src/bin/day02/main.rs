@@ -46,9 +46,43 @@ fn p1(input: &str) -> String {
         .to_string()
 }
 
+fn is_invalid_p2(id: u64) -> bool {
+    let mut number = id;
+    let mut digits = vec![];
+    while number > 0 {
+        digits.push(number % 10);
+        number /= 10;
+    }
+
+    (1..digits.len()).any(|group_size| {
+        if digits.len() % group_size != 0 {
+            return false;
+        }
+
+        (0..group_size).all(|i| {
+            let mut j = i + group_size;
+            while j < digits.len() {
+                if digits[j] != digits[i] {
+                    return false;
+                }
+                j += group_size;
+            }
+            true
+        })
+    })
+}
+
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    parse_input(input)
+        .into_iter()
+        .map(|entry| {
+            (entry.0..=entry.1)
+                .into_iter()
+                .filter(|id| is_invalid_p2(*id))
+                .sum::<u64>()
+        })
+        .sum::<u64>()
+        .to_string()
 }
 
 fn main() {
@@ -74,12 +108,11 @@ mod tests {
 
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT), "");
+        assert_eq!(p2(SAMPLE_INPUT), "4174379265");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "22617871034");
     }
 }
