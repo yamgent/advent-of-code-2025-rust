@@ -1,0 +1,85 @@
+const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/02/input.txt");
+
+fn parse_input(input: &str) -> Vec<(u64, u64)> {
+    input
+        .trim()
+        .split(",")
+        .map(|entry| entry.split_once("-").expect("format to be x-x"))
+        .map(|entry| {
+            (
+                entry.0.parse().expect("a number"),
+                entry.1.parse().expect("a number"),
+            )
+        })
+        .collect()
+}
+
+fn is_invalid(id: u64) -> bool {
+    let mut number = id;
+    let mut digits = vec![];
+    while number > 0 {
+        digits.push(number % 10);
+        number /= 10;
+    }
+
+    if digits.len() % 2 == 1 {
+        return false;
+    }
+
+    digits
+        .iter()
+        .take(digits.len() / 2)
+        .zip(digits.iter().skip(digits.len() / 2))
+        .all(|(a, b)| a == b)
+}
+
+fn p1(input: &str) -> String {
+    parse_input(input)
+        .into_iter()
+        .map(|entry| {
+            (entry.0..=entry.1)
+                .into_iter()
+                .filter(|id| is_invalid(*id))
+                .sum::<u64>()
+        })
+        .sum::<u64>()
+        .to_string()
+}
+
+fn p2(input: &str) -> String {
+    let _input = input.trim();
+    "".to_string()
+}
+
+fn main() {
+    println!("{}", p1(ACTUAL_INPUT));
+    println!("{}", p2(ACTUAL_INPUT));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SAMPLE_INPUT: &str = r"11-22,95-115,998-1012,1188511880-1188511890,222220-222224,1698522-1698528,446443-446449,38593856-38593862,565653-565659,824824821-824824827,2121212118-2121212124";
+
+    #[test]
+    fn test_p1_sample() {
+        assert_eq!(p1(SAMPLE_INPUT), "1227775554");
+    }
+
+    #[test]
+    fn test_p1_actual() {
+        assert_eq!(p1(ACTUAL_INPUT), "15873079081");
+    }
+
+    #[test]
+    fn test_p2_sample() {
+        assert_eq!(p2(SAMPLE_INPUT), "");
+    }
+
+    #[test]
+    #[ignore = "not yet implemented"]
+    fn test_p2_actual() {
+        assert_eq!(p2(ACTUAL_INPUT), "");
+    }
+}
