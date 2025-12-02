@@ -14,13 +14,18 @@ fn parse_input(input: &str) -> Vec<(u64, u64)> {
         .collect()
 }
 
-fn is_invalid(id: u64) -> bool {
+fn decompose(id: u64) -> Vec<u8> {
     let mut number = id;
     let mut digits = vec![];
     while number > 0 {
-        digits.push(number % 10);
+        digits.push((number % 10) as u8);
         number /= 10;
     }
+    digits
+}
+
+fn is_invalid(id: u64) -> bool {
+    let digits = decompose(id);
 
     if digits.len() % 2 == 1 {
         return false;
@@ -46,15 +51,10 @@ fn p1(input: &str) -> String {
 }
 
 fn is_invalid_p2(id: u64) -> bool {
-    let mut number = id;
-    let mut digits = vec![];
-    while number > 0 {
-        digits.push(number % 10);
-        number /= 10;
-    }
+    let digits = decompose(id);
 
     (1..digits.len()).any(|group_size| {
-        if digits.len() % group_size != 0 {
+        if !digits.len().is_multiple_of(group_size) {
             return false;
         }
 
