@@ -27,7 +27,7 @@ fn decompose(id: u64) -> Vec<u8> {
 fn is_invalid(id: u64) -> bool {
     let digits = decompose(id);
 
-    if digits.len() % 2 == 1 {
+    if !digits.len().is_multiple_of(2) {
         return false;
     }
 
@@ -53,22 +53,20 @@ fn p1(input: &str) -> String {
 fn is_invalid_p2(id: u64) -> bool {
     let digits = decompose(id);
 
-    (1..digits.len()).any(|group_size| {
-        if !digits.len().is_multiple_of(group_size) {
-            return false;
-        }
-
-        (0..group_size).all(|i| {
-            let mut j = i + group_size;
-            while j < digits.len() {
-                if digits[j] != digits[i] {
-                    return false;
+    (1..digits.len())
+        .filter(|group_size| digits.len().is_multiple_of(*group_size))
+        .any(|group_size| {
+            (0..group_size).all(|i| {
+                let mut j = i + group_size;
+                while j < digits.len() {
+                    if digits[j] != digits[i] {
+                        return false;
+                    }
+                    j += group_size;
                 }
-                j += group_size;
-            }
-            true
+                true
+            })
         })
-    })
 }
 
 fn p2(input: &str) -> String {
