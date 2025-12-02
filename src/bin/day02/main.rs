@@ -38,7 +38,6 @@ fn p1(input: &str) -> String {
         .into_iter()
         .map(|entry| {
             (entry.0..=entry.1)
-                .into_iter()
                 .filter(|id| is_invalid(*id))
                 .sum::<u64>()
         })
@@ -77,7 +76,6 @@ fn p2(input: &str) -> String {
         .into_iter()
         .map(|entry| {
             (entry.0..=entry.1)
-                .into_iter()
                 .filter(|id| is_invalid_p2(*id))
                 .sum::<u64>()
         })
