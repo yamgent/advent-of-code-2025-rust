@@ -76,13 +76,12 @@ fn p1(input: &str) -> String {
         .trim()
         .lines()
         .map(|line| {
-            let digits = line
-                .trim()
-                .chars()
-                .map(|ch| ch.to_digit(10).expect("a digit"))
-                .collect::<Vec<_>>();
+            let digits = digitize(line);
 
-            let maxs_reversed: Vec<u32> = digits.iter().rev().fold(vec![], |mut acc, entry| {
+            // this is actually the same logic as solve_bank(&digits, 2)
+            // but we are preserving it because this is the first solution we came up
+            // with when we initially solve this part
+            let maxs_reversed = digits.iter().rev().fold(vec![], |mut acc, entry| {
                 acc.push(*acc.last().unwrap_or(entry).max(entry));
                 acc
             });
@@ -94,7 +93,7 @@ fn p1(input: &str) -> String {
                 .max()
                 .expect("not empty array")
         })
-        .sum::<u32>()
+        .sum::<u64>()
         .to_string()
 }
 
