@@ -1,116 +1,93 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/04/input.txt");
 
-fn p1(input: &str) -> String {
-    let grid: HashSet<_> =
-        HashSet::from_iter(input.trim().lines().enumerate().flat_map(|(y, line)| {
+const DIRECTIONS_DELTA: [(i64, i64); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
+
+fn parse_map(input: &str) -> HashMap<(i64, i64), usize> {
+    let papers: HashSet<_> = input
+        .trim()
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
             line.chars()
                 .enumerate()
                 .filter(|(_, ch)| *ch == '@')
                 .map(move |(x, _)| (x as i64, y as i64))
-        }));
-
-    let size = (
-        input
-            .trim()
-            .lines()
-            .next()
-            .expect("at least one row")
-            .chars()
-            .count(),
-        input.trim().lines().count(),
-    );
-
-    (0_i64..size.0 as i64)
-        .map(|x| {
-            (0_i64..size.1 as i64)
-                .filter(|y| grid.contains(&(x, *y)))
-                .filter(|y| {
-                    let coord = (x, *y);
-
-                    [
-                        (-1, -1),
-                        (-1, 0),
-                        (-1, 1),
-                        (0, -1),
-                        (0, 1),
-                        (1, -1),
-                        (1, 0),
-                        (1, 1),
-                    ]
-                    .into_iter()
-                    .map(|relative| (coord.0 + relative.0, coord.1 + relative.1))
-                    .filter(|adjacent| grid.contains(adjacent))
-                    .count()
-                        < 4
-                })
-                .count()
         })
-        .sum::<usize>()
+        .collect::<HashSet<_>>();
+
+    papers
+        .iter()
+        .map(|coord| {
+            (
+                *coord,
+                DIRECTIONS_DELTA
+                    .into_iter()
+                    .map(|delta| (coord.0 + delta.0, coord.1 + delta.1))
+                    .filter(|neighbour| papers.contains(neighbour))
+                    .count(),
+            )
+        })
+        .collect::<HashMap<_, _>>()
+}
+
+const ACCESSIBLE_MAX: usize = 3;
+
+fn p1(input: &str) -> String {
+    parse_map(input)
+        .values()
+        .filter(|neighbours_count| **neighbours_count <= ACCESSIBLE_MAX)
+        .count()
         .to_string()
 }
 
 fn p2(input: &str) -> String {
-    let mut grid: HashSet<_> =
-        HashSet::from_iter(input.trim().lines().enumerate().flat_map(|(y, line)| {
-            line.chars()
-                .enumerate()
-                .filter(|(_, ch)| *ch == '@')
-                .map(move |(x, _)| (x as i64, y as i64))
-        }));
+    let mut papers = parse_map(input);
 
-    let size = (
-        input
-            .trim()
-            .lines()
-            .next()
-            .expect("at least one row")
-            .chars()
-            .count(),
-        input.trim().lines().count(),
-    );
-
-    let mut iterations = 0;
     let mut count = 0;
-    let mut last_coords = vec![];
+    let mut to_remove = papers
+        .iter()
+        .filter(|(_, neighbours_count)| **neighbours_count <= ACCESSIBLE_MAX)
+        .map(|(coord, _)| *coord)
+        .collect::<HashSet<_>>();
 
-    while iterations == 0 || !last_coords.is_empty() {
-        // not the most efficient but at least it does the job now
-        last_coords = (0_i64..size.0 as i64)
-            .flat_map(|x| {
-                (0_i64..size.1 as i64)
-                    .filter(|y| grid.contains(&(x, *y)))
-                    .filter(|y| {
-                        let coord = (x, *y);
+    while !to_remove.is_empty() {
+        count += to_remove.len();
 
-                        [
-                            (-1, -1),
-                            (-1, 0),
-                            (-1, 1),
-                            (0, -1),
-                            (0, 1),
-                            (1, -1),
-                            (1, 0),
-                            (1, 1),
-                        ]
-                        .into_iter()
-                        .map(|relative| (coord.0 + relative.0, coord.1 + relative.1))
-                        .filter(|adjacent| grid.contains(adjacent))
-                        .count()
-                            < 4
-                    })
-                    .map(|y| (x, y))
-                    .collect::<Vec<_>>()
+        let mut new_candidates = HashSet::new();
+
+        to_remove.iter().for_each(|coord| {
+            DIRECTIONS_DELTA
+                .into_iter()
+                .map(|delta| (coord.0 + delta.0, coord.1 + delta.1))
+                .for_each(|neighbour| {
+                    if let Some(value) = papers.get_mut(&neighbour) {
+                        *value -= 1;
+                        new_candidates.insert(neighbour);
+                    }
+                });
+            papers.remove(coord);
+        });
+
+        to_remove = new_candidates
+            .into_iter()
+            .filter(|coord| {
+                papers
+                    .get(coord)
+                    .map(|neighbours_count| *neighbours_count <= ACCESSIBLE_MAX)
+                    .unwrap_or(false)
             })
             .collect();
-
-        iterations += 1;
-        count += last_coords.len();
-
-        last_coords.iter().for_each(|coord| {
-            grid.remove(coord);
-        });
     }
 
     count.to_string()
