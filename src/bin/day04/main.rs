@@ -27,7 +27,7 @@ fn p1(input: &str) -> String {
             (0_i64..size.1 as i64)
                 .filter(|y| grid.contains(&(x, *y)))
                 .filter(|y| {
-                    let coord = (x as i64, *y);
+                    let coord = (x, *y);
 
                     [
                         (-1, -1),
@@ -75,14 +75,14 @@ fn p2(input: &str) -> String {
     let mut count = 0;
     let mut last_coords = vec![];
 
-    while iterations == 0 || last_coords.len() > 0 {
+    while iterations == 0 || !last_coords.is_empty() {
         // not the most efficient but at least it does the job now
         last_coords = (0_i64..size.0 as i64)
             .flat_map(|x| {
                 (0_i64..size.1 as i64)
                     .filter(|y| grid.contains(&(x, *y)))
                     .filter(|y| {
-                        let coord = (x as i64, *y);
+                        let coord = (x, *y);
 
                         [
                             (-1, -1),
@@ -109,7 +109,7 @@ fn p2(input: &str) -> String {
         count += last_coords.len();
 
         last_coords.iter().for_each(|coord| {
-            grid.remove(&coord);
+            grid.remove(coord);
         });
     }
 
