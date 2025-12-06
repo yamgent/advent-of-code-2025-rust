@@ -63,17 +63,17 @@ fn p2(input: &str) -> String {
     ranges
         .into_iter()
         .fold(vec![], |mut acc, range| {
+            // check if intervals can be merged
             if let Some(prev) = acc.last()
                 && in_range(prev, range.0)
             {
                 let last = acc.last_mut().expect(
                     "already called last() just before this, which we received a result of Some()",
                 );
-                // in case the two intervals are [3-10, 4-6], we should drop 4-6 instead of
-                // changing the first interval to 3-6
-                if last.1 < range.1 {
-                    last.1 = range.1;
-                }
+
+                // this will do the right thing for [3-10, 4-6], which should just drop 4-6 instead
+                // of merging
+                *last = (last.0.min(range.0), last.1.max(range.1));
             } else {
                 acc.push(range);
             }
