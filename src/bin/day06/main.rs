@@ -30,9 +30,8 @@ fn parse_input_p1(input: &str) -> Vec<Equation> {
     input
         .trim()
         .lines()
-        .rev()
-        .next()
-        .expect("at least two lines, first reversed line contains the symbols")
+        .next_back()
+        .expect("at least two lines, last line should contain the symbols")
         .split_whitespace()
         .enumerate()
         .map(|(column_idx, symbol)| {
@@ -89,9 +88,7 @@ fn parse_input_p2(input: &str) -> Vec<Equation> {
             let numbers = (from.0..to.0)
                 .map(|column_idx| {
                     grid.iter().fold(0, |acc, row| {
-                        if let Some(digit) =
-                            row.iter().nth(column_idx).and_then(|ch| ch.to_digit(10))
-                        {
+                        if let Some(digit) = row.get(column_idx).and_then(|ch| ch.to_digit(10)) {
                             acc * 10 + digit as i64
                         } else {
                             acc
