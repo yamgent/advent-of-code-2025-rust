@@ -14,7 +14,7 @@ impl Equation {
     }
 }
 
-fn parse_input(input: &str) -> Vec<Equation> {
+fn parse_input_p1(input: &str) -> Vec<Equation> {
     let numbers = input
         .trim()
         .lines()
@@ -53,16 +53,69 @@ fn parse_input(input: &str) -> Vec<Equation> {
 }
 
 fn p1(input: &str) -> String {
-    parse_input(input)
+    parse_input_p1(input)
         .into_iter()
         .map(|entry| entry.calc())
         .sum::<i64>()
         .to_string()
 }
 
+fn parse_input_p2(input: &str) -> Vec<Equation> {
+    let grid = input
+        .trim()
+        .lines()
+        .map(|line| line.chars().collect::<Vec<_>>())
+        .collect::<Vec<_>>();
+
+    let equation_operators = input
+        .trim()
+        .lines()
+        .next_back()
+        .expect("at least two lines, last line should contain the symbols")
+        .chars()
+        .enumerate()
+        .filter(|(_, ch)| *ch == '+' || *ch == '*')
+        .collect::<Vec<_>>();
+
+    equation_operators
+        .iter()
+        .zip(
+            equation_operators
+                .iter()
+                .skip(1)
+                .chain([(input.len(), ' ')].iter()),
+        )
+        .map(|(from, to)| {
+            let numbers = (from.0..to.0)
+                .map(|column_idx| {
+                    grid.iter().fold(0, |acc, row| {
+                        if let Some(digit) =
+                            row.iter().nth(column_idx).and_then(|ch| ch.to_digit(10))
+                        {
+                            acc * 10 + digit as i64
+                        } else {
+                            acc
+                        }
+                    })
+                })
+                .filter(|number| *number > 0)
+                .collect::<Vec<_>>();
+
+            match from.1 {
+                '+' => Equation::Add(numbers),
+                '*' => Equation::Mul(numbers),
+                _ => panic!("not possible, we checked for + and * earlier"),
+            }
+        })
+        .collect()
+}
+
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    parse_input_p2(input)
+        .into_iter()
+        .map(|entry| entry.calc())
+        .sum::<i64>()
+        .to_string()
 }
 
 fn main() {
@@ -93,12 +146,11 @@ mod tests {
 
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT), "");
+        assert_eq!(p2(SAMPLE_INPUT), "3263827");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "9581313737063");
     }
 }
