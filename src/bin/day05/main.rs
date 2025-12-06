@@ -55,8 +55,35 @@ fn p1(input: &str) -> String {
 }
 
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    let input = parse_input(input);
+
+    let mut ranges = input.ranges;
+    ranges.sort_unstable();
+
+    ranges
+        .into_iter()
+        .fold(vec![], |mut acc, range| {
+            if let Some(prev) = acc.last()
+                && in_range(prev, range.0)
+            {
+                let last = acc.last_mut().expect(
+                    "already called last() just before this, which we received a result of Some()",
+                );
+                // in case the two intervals are [3-10, 4-6], we should drop 4-6 instead of
+                // changing the first interval to 3-6
+                if last.1 < range.1 {
+                    last.1 = range.1;
+                }
+            } else {
+                acc.push(range);
+            }
+
+            acc
+        })
+        .into_iter()
+        .map(|range| range.1 - range.0 + 1)
+        .sum::<i64>()
+        .to_string()
 }
 
 fn main() {
@@ -94,12 +121,24 @@ mod tests {
 
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT), "");
+        assert_eq!(p2(SAMPLE_INPUT), "14");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
+    fn test_p2_merge_logic() {
+        assert_eq!(
+            p2(r"
+3-10
+4-6
+
+1
+"),
+            "8" // should drop 4-6 after merge
+        );
+    }
+
+    #[test]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "332998283036769");
     }
 }
