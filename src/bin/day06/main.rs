@@ -8,8 +8,8 @@ enum Equation {
 impl Equation {
     fn calc(&self) -> i64 {
         match self {
-            Self::Add(nums) => nums.iter().sum::<i64>(),
-            Self::Mul(nums) => nums.iter().product::<i64>(),
+            Self::Add(nums) => nums.iter().sum(),
+            Self::Mul(nums) => nums.iter().product(),
         }
     }
 }
@@ -22,7 +22,7 @@ fn parse_input_p1(input: &str) -> Vec<Equation> {
         .skip(1)
         .map(|line| {
             line.split_whitespace()
-                .map(|x| x.parse::<i64>().expect("a number"))
+                .map(|x| x.parse().expect("a number"))
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
@@ -35,10 +35,7 @@ fn parse_input_p1(input: &str) -> Vec<Equation> {
         .split_whitespace()
         .enumerate()
         .map(|(column_idx, symbol)| {
-            let column_numbers = numbers
-                .iter()
-                .map(|row| row[column_idx])
-                .collect::<Vec<_>>();
+            let column_numbers = numbers.iter().map(|row| row[column_idx]).collect();
 
             if symbol == "+" {
                 Equation::Add(column_numbers)
@@ -96,7 +93,7 @@ fn parse_input_p2(input: &str) -> Vec<Equation> {
                     })
                 })
                 .filter(|number| *number > 0)
-                .collect::<Vec<_>>();
+                .collect();
 
             match from.1 {
                 '+' => Equation::Add(numbers),
