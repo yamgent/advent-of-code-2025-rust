@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/07/input.txt");
 
@@ -51,7 +51,7 @@ fn p1(input: &str) -> String {
 
     let mut current_y = input.start_pos.1;
     let mut current_xs = HashSet::from([input.start_pos.0]);
-    let mut count = 0;
+    let mut count = 0_i64;
 
     while current_y < input.total_rows {
         let mut new_xs = HashSet::new();
@@ -74,8 +74,28 @@ fn p1(input: &str) -> String {
 }
 
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    let input = Input::parse(input);
+
+    let mut current_y = input.start_pos.1;
+    let mut current_xs = HashMap::from([(input.start_pos.0, 1)]);
+
+    while current_y < input.total_rows {
+        let mut new_xs = HashMap::new();
+
+        current_xs.iter().for_each(|(x, count)| {
+            if input.splitters.contains(&(*x, current_y)) {
+                *new_xs.entry(*x - 1).or_default() += count;
+                *new_xs.entry(*x + 1).or_default() += count;
+            } else {
+                *new_xs.entry(*x).or_default() += count;
+            }
+        });
+
+        current_xs = new_xs;
+        current_y += 1;
+    }
+
+    current_xs.values().sum::<i64>().to_string()
 }
 
 fn main() {
@@ -118,12 +138,11 @@ mod tests {
 
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT), "");
+        assert_eq!(p2(SAMPLE_INPUT), "40");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "80158285728929");
     }
 }
