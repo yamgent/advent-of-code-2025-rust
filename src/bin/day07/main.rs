@@ -49,53 +49,53 @@ impl Input {
 fn p1(input: &str) -> String {
     let input = Input::parse(input);
 
-    let mut current_y = input.start_pos.1;
-    let mut current_xs = HashSet::from([input.start_pos.0]);
-    let mut count = 0_i64;
+    (input.start_pos.1..input.total_rows)
+        .fold(
+            (HashSet::from([input.start_pos.0]), 0_i64),
+            |(current_xs, mut count), current_y| {
+                let mut new_xs = HashSet::new();
 
-    while current_y < input.total_rows {
-        let mut new_xs = HashSet::new();
+                current_xs.into_iter().for_each(|x| {
+                    if input.splitters.contains(&(x, current_y)) {
+                        new_xs.insert(x - 1);
+                        new_xs.insert(x + 1);
+                        count += 1;
+                    } else {
+                        new_xs.insert(x);
+                    }
+                });
 
-        current_xs.iter().for_each(|x| {
-            if input.splitters.contains(&(*x, current_y)) {
-                new_xs.insert(*x - 1);
-                new_xs.insert(*x + 1);
-                count += 1;
-            } else {
-                new_xs.insert(*x);
-            }
-        });
-
-        current_xs = new_xs;
-        current_y += 1;
-    }
-
-    count.to_string()
+                (new_xs, count)
+            },
+        )
+        .1
+        .to_string()
 }
 
 fn p2(input: &str) -> String {
     let input = Input::parse(input);
 
-    let mut current_y = input.start_pos.1;
-    let mut current_xs = HashMap::from([(input.start_pos.0, 1)]);
+    (input.start_pos.1..input.total_rows)
+        .fold(
+            HashMap::from([(input.start_pos.0, 1)]),
+            |current_xs, current_y| {
+                let mut new_xs = HashMap::new();
 
-    while current_y < input.total_rows {
-        let mut new_xs = HashMap::new();
+                current_xs.into_iter().for_each(|(x, count)| {
+                    if input.splitters.contains(&(x, current_y)) {
+                        *new_xs.entry(x - 1).or_default() += count;
+                        *new_xs.entry(x + 1).or_default() += count;
+                    } else {
+                        *new_xs.entry(x).or_default() += count;
+                    }
+                });
 
-        current_xs.iter().for_each(|(x, count)| {
-            if input.splitters.contains(&(*x, current_y)) {
-                *new_xs.entry(*x - 1).or_default() += count;
-                *new_xs.entry(*x + 1).or_default() += count;
-            } else {
-                *new_xs.entry(*x).or_default() += count;
-            }
-        });
-
-        current_xs = new_xs;
-        current_y += 1;
-    }
-
-    current_xs.values().sum::<i64>().to_string()
+                new_xs
+            },
+        )
+        .values()
+        .sum::<i64>()
+        .to_string()
 }
 
 fn main() {
