@@ -3,7 +3,7 @@ use std::{
     collections::{BinaryHeap, HashMap, HashSet},
 };
 
-use union_find::{QuickFindUf, UnionBySize, UnionFind};
+use union_find::{QuickFindUf, QuickUnionUf, UnionBySize, UnionFind};
 
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/08/input.txt");
 
@@ -29,14 +29,12 @@ fn dist_squared(a: &Coord, b: &Coord) -> i64 {
     (b.0 - a.0).pow(2) + (b.1 - a.1).pow(2) + (b.2 - a.2).pow(2)
 }
 
-fn solve_p1(input: &str, connections: usize) -> i64 {
-    let input = parse_input(input);
-
-    let mut dists = input
+fn compute_dists(coords: &[Coord]) -> BinaryHeap<(Reverse<i64>, usize, usize)> {
+    coords
         .iter()
         .enumerate()
         .flat_map(|(current_idx, current)| {
-            input
+            coords
                 .iter()
                 .enumerate()
                 .skip(current_idx + 1)
@@ -48,34 +46,29 @@ fn solve_p1(input: &str, connections: usize) -> i64 {
                     )
                 })
         })
-        .collect::<BinaryHeap<_>>();
+        .collect()
+}
 
-    let mut ufs = QuickFindUf::<UnionBySize>::new(input.len());
+fn solve_p1(input: &str, connections: usize) -> i64 {
+    let coords = parse_input(input);
+    let mut dists = compute_dists(&coords);
+    let mut ufs = QuickFindUf::<UnionBySize>::new(coords.len());
 
     (0..connections).for_each(|_| {
         let next = dists.pop().expect("still have a candidate");
-
         ufs.union(next.1, next.2);
     });
 
-    let mut counters = HashMap::new();
+    let mut collections_size = HashMap::new();
 
-    (0..input.len()).for_each(|idx| {
+    (0..coords.len()).for_each(|idx| {
         let collection = ufs.find(idx);
-        *counters.entry(collection).or_insert(0) += 1;
+        *collections_size.entry(collection).or_insert(0) += 1;
     });
 
-    let mut counters = counters
-        .into_iter()
-        .map(|(collection, count)| (Reverse(count), collection))
-        .collect::<Vec<_>>();
-    counters.sort_unstable();
-
-    counters
-        .into_iter()
-        .take(3)
-        .map(|(count, _)| count.0)
-        .product()
+    let mut sizes = collections_size.values().map(Reverse).collect::<Vec<_>>();
+    sizes.sort_unstable();
+    sizes.into_iter().take(3).map(|size| size.0).product()
 }
 
 fn p1(input: &str) -> String {
@@ -83,40 +76,24 @@ fn p1(input: &str) -> String {
 }
 
 fn p2(input: &str) -> String {
-    let input = parse_input(input);
+    let coords = parse_input(input);
+    let mut dists = compute_dists(&coords);
+    let mut ufs = QuickUnionUf::<UnionBySize>::new(coords.len());
 
-    let mut dists = input
-        .iter()
-        .enumerate()
-        .flat_map(|(current_idx, current)| {
-            input
-                .iter()
-                .enumerate()
-                .skip(current_idx + 1)
-                .map(move |(entry_idx, entry)| {
-                    (
-                        Reverse(dist_squared(current, entry)),
-                        current_idx,
-                        entry_idx,
-                    )
-                })
-        })
-        .collect::<BinaryHeap<_>>();
-
-    let mut ufs = QuickFindUf::<UnionBySize>::new(input.len());
     let mut used = HashSet::new();
 
     loop {
         let next = dists
             .pop()
             .expect("puzzle should have a solution before we exhaust everything");
+
         used.insert(next.1);
         used.insert(next.2);
 
         ufs.union(next.1, next.2);
 
-        if used.len() == input.len() {
-            return (input[next.1].0 * input[next.2].0).to_string();
+        if used.len() == coords.len() {
+            return (coords[next.1].0 * coords[next.2].0).to_string();
         }
     }
 }
