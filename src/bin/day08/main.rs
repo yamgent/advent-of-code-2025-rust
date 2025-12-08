@@ -29,6 +29,9 @@ fn dist_squared(a: &Coord, b: &Coord) -> i64 {
     (b.0 - a.0).pow(2) + (b.1 - a.1).pow(2) + (b.2 - a.2).pow(2)
 }
 
+// a heap is faster than a sorted vec, because not all contents of the heap
+// will be consumed. So if we only consume k -> O(n) for heapify + O(k lg n),
+// whereas a vec will cost O(n lg n) even if we only consume k.
 fn compute_dists(coords: &[Coord]) -> BinaryHeap<(Reverse<i64>, usize, usize)> {
     coords
         .iter()
@@ -66,6 +69,8 @@ fn solve_p1(input: &str, connections: usize) -> i64 {
         *collections_size.entry(collection).or_insert(0) += 1;
     });
 
+    // because sizes is expected to be small, it doesn't matter if we use a vec or
+    // a heap here - there's no observable speedup even if we switch to a heap
     let mut sizes = collections_size.values().map(Reverse).collect::<Vec<_>>();
     sizes.sort_unstable();
     sizes.into_iter().take(3).map(|size| size.0).product()
