@@ -1,6 +1,6 @@
 use std::{
     cmp::Reverse,
-    collections::{BinaryHeap, HashMap},
+    collections::{BinaryHeap, HashMap, HashSet},
 };
 
 use union_find::{QuickFindUf, UnionBySize, UnionFind};
@@ -83,8 +83,42 @@ fn p1(input: &str) -> String {
 }
 
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    let input = parse_input(input);
+
+    let mut dists = input
+        .iter()
+        .enumerate()
+        .flat_map(|(current_idx, current)| {
+            input
+                .iter()
+                .enumerate()
+                .skip(current_idx + 1)
+                .map(move |(entry_idx, entry)| {
+                    (
+                        Reverse(dist_squared(current, entry)),
+                        current_idx,
+                        entry_idx,
+                    )
+                })
+        })
+        .collect::<BinaryHeap<_>>();
+
+    let mut ufs = QuickFindUf::<UnionBySize>::new(input.len());
+    let mut used = HashSet::new();
+
+    loop {
+        let next = dists
+            .pop()
+            .expect("puzzle should have a solution before we exhaust everything");
+        used.insert(next.1);
+        used.insert(next.2);
+
+        ufs.union(next.1, next.2);
+
+        if used.len() == input.len() {
+            return (input[next.1].0 * input[next.2].0).to_string();
+        }
+    }
 }
 
 fn main() {
@@ -131,12 +165,11 @@ mod tests {
 
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT), "");
+        assert_eq!(p2(SAMPLE_INPUT), "25272");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "2185817796");
     }
 }
