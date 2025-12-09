@@ -1,7 +1,6 @@
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/09/input.txt");
 
 type Point = (i64, i64);
-type Line = (Point, Point);
 
 fn parse_input(input: &str) -> Vec<Point> {
     input
@@ -39,34 +38,52 @@ fn p1(input: &str) -> String {
 
 #[derive(Debug)]
 struct Rect {
+    // preserved for debugging purposes, so that
+    // we can track back the original points
     a: Point,
     b: Point,
+
+    // computed from a & b
+    left: i64,
+    right: i64,
+    top: i64,
+    bottom: i64,
 }
 
 impl Rect {
     fn new(a: &Point, b: &Point) -> Self {
-        Self { a: *a, b: *b }
+        Self {
+            a: *a,
+            b: *b,
+            left: a.0.min(b.0),
+            right: a.0.max(b.0),
+            top: a.1.min(b.1),
+            bottom: a.1.max(b.1),
+        }
     }
 
     fn has_line(&self, line: &Line) -> bool {
-        let left = self.a.0.min(self.b.0);
-        let right = self.a.0.max(self.b.0);
-        let top = self.a.1.min(self.b.1);
-        let bottom = self.a.1.max(self.b.1);
-
-        if line.0.0 == line.1.0 {
-            let line_x = line.0.0;
-            let line_top = line.0.1.min(line.1.1);
-            let line_bottom = line.0.1.max(line.1.1);
-            !(line_x <= left || line_x >= right || line_bottom < top || line_top > bottom)
-        } else if line.0.1 == line.1.1 {
-            let line_y = line.0.1;
-            let line_left = line.0.0.min(line.1.0);
-            let line_right = line.0.0.max(line.1.0);
-
-            !(line_y <= top || line_y >= bottom || line_right < left || line_left > right)
-        } else {
-            panic!("Cannot handle slanted lines");
+        match line {
+            Line::Horizontal {
+                y: line_y,
+                left: line_left,
+                right: line_right,
+            } => {
+                !(*line_y <= self.top
+                    || *line_y >= self.bottom
+                    || *line_right < self.left
+                    || *line_left > self.right)
+            }
+            Line::Vertical {
+                x: line_x,
+                top: line_top,
+                bottom: line_bottom,
+            } => {
+                !(*line_x <= self.left
+                    || *line_x >= self.right
+                    || *line_bottom < self.top
+                    || *line_top > self.bottom)
+            }
         }
     }
 
@@ -75,11 +92,36 @@ impl Rect {
     }
 }
 
+enum Line {
+    Horizontal { y: i64, left: i64, right: i64 },
+    Vertical { x: i64, top: i64, bottom: i64 },
+}
+
+impl Line {
+    fn new(a: &Point, b: &Point) -> Self {
+        if a.1 == b.1 {
+            Self::Horizontal {
+                y: a.1,
+                left: a.0.min(b.0),
+                right: a.0.max(b.0),
+            }
+        } else if a.0 == b.0 {
+            Self::Vertical {
+                x: a.0,
+                top: a.1.min(b.1),
+                bottom: a.1.max(b.1),
+            }
+        } else {
+            panic!("Cannot handle slanted lines");
+        }
+    }
+}
+
 fn lines(coords: &[Point]) -> Vec<Line> {
     coords
         .iter()
         .zip(coords.iter().skip(1).chain(coords.iter().take(1)))
-        .map(|(a, b)| (*a, *b))
+        .map(|(a, b)| Line::new(a, b))
         .collect()
 }
 
