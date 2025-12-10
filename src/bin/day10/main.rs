@@ -121,6 +121,10 @@ fn p1(input: &str) -> String {
         .to_string()
 }
 
+// the Rust z3 crate has very little documentation...
+// thankfully, u/ojoelescalon also used z3 (who also just used LLM to convert python's z3 to Rust lol)
+// so we can refer to their solution for assistance
+// post: https://www.reddit.com/r/adventofcode/comments/1pity70/comment/nta1om6/
 fn solve_counters(requirement: &MachineRequirements) -> u64 {
     let optimizer = Optimize::new();
     let presses = (0..requirement.button_wirings.len())
