@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use z3::{Optimize, SatResult, ast::Int};
+
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/10/input.txt");
 
 #[derive(PartialEq, Eq, Debug)]
@@ -119,9 +121,57 @@ fn p1(input: &str) -> String {
         .to_string()
 }
 
+fn solve_counters(requirement: &MachineRequirements) -> u64 {
+    let optimizer = Optimize::new();
+    let presses = (0..requirement.button_wirings.len())
+        .map(|button_idx| Int::fresh_const(&format!("button_{}", button_idx)))
+        .collect::<Vec<_>>();
+    let total_presses = Int::fresh_const("total");
+
+    presses
+        .iter()
+        .for_each(|press| optimizer.assert(&press.ge(0)));
+
+    requirement
+        .joltage_requirements
+        .iter()
+        .enumerate()
+        .for_each(|(counter_idx, joltage)| {
+            optimizer.assert(
+                &Int::add(
+                    &requirement
+                        .button_wirings
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, button_wiring)| button_wiring.contains(&counter_idx))
+                        .map(|(button_idx, _)| presses[button_idx].clone())
+                        .collect::<Vec<_>>(),
+                )
+                .eq(Int::from_u64(*joltage)),
+            );
+        });
+
+    optimizer.assert(&total_presses.eq(Int::add(&presses)));
+    optimizer.minimize(&total_presses);
+
+    if let SatResult::Sat = optimizer.check(&[]) {
+        optimizer
+            .get_model()
+            .expect("a solution")
+            .eval(&total_presses, true)
+            .and_then(|total_presses| total_presses.as_u64())
+            .expect("a solution")
+    } else {
+        panic!("Fail to find solution");
+    }
+}
+
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    parse_input(input)
+        .into_iter()
+        .map(|requirements| solve_counters(&requirements))
+        .sum::<u64>()
+        .to_string()
 }
 
 fn main() {
@@ -180,12 +230,11 @@ mod tests {
 
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT), "");
+        assert_eq!(p2(SAMPLE_INPUT), "33");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "16765");
     }
 }
