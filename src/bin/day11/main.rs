@@ -66,9 +66,7 @@ fn traverse_path(graph: &ReverseDAG, path: &[&str]) -> u64 {
 
     path.iter()
         .zip(path.iter().skip(1))
-        .fold(1, |acc, (src, dest)| {
-            traverse_a_to_b(&graph, src, acc, dest)
-        })
+        .fold(1, |acc, (src, dest)| traverse_a_to_b(graph, src, acc, dest))
 }
 
 const YOU: &str = "you";
