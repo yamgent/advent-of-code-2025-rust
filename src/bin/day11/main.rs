@@ -73,9 +73,59 @@ fn p1(input: &str) -> String {
         .to_string()
 }
 
+fn reverse_graph(graph: &Graph) -> Graph {
+    let mut new_graph = Graph::new();
+
+    graph.iter().for_each(|(node, children)| {
+        children.iter().for_each(|child| {
+            new_graph
+                .entry(child.to_string())
+                .or_default()
+                .push(node.to_string());
+        });
+    });
+
+    new_graph
+}
+
+fn traverse_to(graph: &Graph, src: String, src_count: u64, dest: String) -> u64 {
+    fn traverse(graph: &Graph, node_count: &mut HashMap<String, u64>, current_node: String) -> u64 {
+        if let Some(count) = node_count.get(&current_node) {
+            return *count;
+        }
+        let count = {
+            match graph.get(&current_node) {
+                Some(children) => children
+                    .iter()
+                    .map(|child| traverse(graph, node_count, child.to_string()))
+                    .sum(),
+                None => 0,
+            }
+        };
+
+        node_count.insert(current_node, count);
+        count
+    }
+
+    traverse(
+        graph,
+        &mut [(src.to_string(), src_count)].into_iter().collect(),
+        dest.to_string(),
+    )
+}
+
 fn p2(input: &str) -> String {
-    let _input = input.trim();
-    "".to_string()
+    let graph = reverse_graph(&parse_input(input));
+
+    let svr_to_dac = traverse_to(&graph, "svr".to_string(), 1, "dac".to_string());
+    let dac_to_fft = traverse_to(&graph, "dac".to_string(), svr_to_dac, "fft".to_string());
+    let fft_to_out = traverse_to(&graph, "fft".to_string(), dac_to_fft, "out".to_string());
+
+    let svr_to_fft = traverse_to(&graph, "svr".to_string(), 1, "fft".to_string());
+    let fft_to_dac = traverse_to(&graph, "fft".to_string(), svr_to_fft, "dac".to_string());
+    let dac_to_out = traverse_to(&graph, "dac".to_string(), fft_to_dac, "out".to_string());
+
+    (fft_to_out + dac_to_out).to_string()
 }
 
 fn main() {
@@ -100,8 +150,6 @@ hhh: ccc fff iii
 iii: out
 ";
 
-    const SAMPLE_INPUT_P2: &str = r"";
-
     #[test]
     fn test_p1_sample() {
         assert_eq!(p1(SAMPLE_INPUT_P1), "5");
@@ -112,14 +160,29 @@ iii: out
         assert_eq!(p1(ACTUAL_INPUT), "566");
     }
 
+    const SAMPLE_INPUT_P2: &str = r"
+svr: aaa bbb
+aaa: fft
+fft: ccc
+bbb: tty
+tty: ccc
+ccc: ddd eee
+ddd: hub
+hub: fff
+eee: dac
+dac: fff
+fff: ggg hhh
+ggg: out
+hhh: out
+";
+
     #[test]
     fn test_p2_sample() {
-        assert_eq!(p2(SAMPLE_INPUT_P2), "");
+        assert_eq!(p2(SAMPLE_INPUT_P2), "2");
     }
 
     #[test]
-    #[ignore = "not yet implemented"]
     fn test_p2_actual() {
-        assert_eq!(p2(ACTUAL_INPUT), "");
+        assert_eq!(p2(ACTUAL_INPUT), "331837854931968");
     }
 }
