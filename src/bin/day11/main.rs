@@ -1,83 +1,30 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/11/input.txt");
 
-type Graph = HashMap<String, Vec<String>>;
+struct Graph(HashMap<String, Vec<String>>);
 struct ReverseDAG(HashMap<String, Vec<String>>);
 
 fn parse_input(input: &str) -> Graph {
-    input
-        .trim()
-        .lines()
-        .map(|line| {
-            let (current, children) = line.split_once(": ").expect("xx: xx xx");
-            (
-                current.to_string(),
-                children.split(" ").map(|child| child.to_string()).collect(),
-            )
-        })
-        .collect()
-}
-
-fn toposort(graph: &Graph, src: String, dest: String) -> Vec<String> {
-    fn traverse(
-        graph: &Graph,
-        dest: String,
-        result: &mut Vec<String>,
-        visited: &mut HashSet<String>,
-        current: String,
-    ) {
-        visited.insert(current.clone());
-
-        if current != dest
-            && let Some(children) = graph.get(&current)
-        {
-            children.iter().for_each(|child| {
-                if visited.contains(child) {
-                    return;
-                }
-
-                traverse(graph, dest.clone(), result, visited, child.clone());
-            });
-        }
-
-        result.push(current);
-    }
-
-    let mut result = vec![];
-    traverse(graph, dest.clone(), &mut result, &mut HashSet::new(), src);
-    result.reverse();
-    result
-}
-
-fn p1(input: &str) -> String {
-    let graph = parse_input(input);
-    let order = toposort(&graph, "you".to_string(), "out".to_string());
-    let mut counts = [("you".to_string(), 1)]
-        .into_iter()
-        .collect::<HashMap<_, _>>();
-
-    order.iter().for_each(|node| {
-        let count = *counts
-            .get(node)
-            .expect("because of toposort, we should have visited this before");
-        if let Some(children) = graph.get(node) {
-            children.iter().for_each(|child| {
-                *counts.entry(child.clone()).or_default() += count;
-            });
-        }
-    });
-
-    counts
-        .get("out")
-        .expect("out should have been visited")
-        .to_string()
+    Graph(
+        input
+            .trim()
+            .lines()
+            .map(|line| {
+                let (node, children) = line.split_once(": ").expect("xx: xx xx");
+                (
+                    node.to_string(),
+                    children.split(" ").map(|child| child.to_string()).collect(),
+                )
+            })
+            .collect(),
+    )
 }
 
 fn reverse_graph(graph: &Graph) -> ReverseDAG {
-    let mut new_graph = Graph::new();
+    let mut new_graph: HashMap<String, Vec<String>> = HashMap::new();
 
-    graph.iter().for_each(|(node, children)| {
+    graph.0.iter().for_each(|(node, children)| {
         children.iter().for_each(|child| {
             new_graph
                 .entry(child.to_string())
@@ -89,33 +36,34 @@ fn reverse_graph(graph: &Graph) -> ReverseDAG {
     ReverseDAG(new_graph)
 }
 
-fn traverse_a_to_b(graph: &ReverseDAG, src: &str, src_count: u64, dest: &str) -> u64 {
-    fn visit<'a>(
-        graph: &'a ReverseDAG,
-        node_count: &mut HashMap<&'a str, u64>,
-        current_node: &'a str,
-    ) -> u64 {
-        if let Some(count) = node_count.get(current_node) {
-            return *count;
-        }
-        let count = {
-            match graph.0.get(current_node) {
-                Some(children) => children
-                    .iter()
-                    .map(|child| visit(graph, node_count, child))
-                    .sum(),
-                None => 0,
+fn traverse_path(graph: &ReverseDAG, path: &[&str]) -> u64 {
+    fn traverse_a_to_b(graph: &ReverseDAG, src: &str, src_count: u64, dest: &str) -> u64 {
+        fn visit<'a>(
+            graph: &'a ReverseDAG,
+            node_count: &mut HashMap<&'a str, u64>,
+            current_node: &'a str,
+        ) -> u64 {
+            if let Some(count) = node_count.get(current_node) {
+                return *count;
             }
-        };
 
-        node_count.insert(current_node, count);
-        count
+            let count = {
+                match graph.0.get(current_node) {
+                    Some(children) => children
+                        .iter()
+                        .map(|child| visit(graph, node_count, child))
+                        .sum(),
+                    None => 0,
+                }
+            };
+
+            node_count.insert(current_node, count);
+            count
+        }
+
+        visit(graph, &mut [(src, src_count)].into_iter().collect(), dest)
     }
 
-    visit(graph, &mut [(src, src_count)].into_iter().collect(), dest)
-}
-
-fn traverse_path(graph: &ReverseDAG, path: &[&str]) -> u64 {
     path.iter()
         .zip(path.iter().skip(1))
         .fold(1, |acc, (src, dest)| {
@@ -123,13 +71,19 @@ fn traverse_path(graph: &ReverseDAG, path: &[&str]) -> u64 {
         })
 }
 
+const YOU: &str = "you";
+const SVR: &str = "svr";
+const DAC: &str = "dac";
+const FFT: &str = "fft";
+const OUT: &str = "out";
+
+fn p1(input: &str) -> String {
+    let graph = reverse_graph(&parse_input(input));
+    traverse_path(&graph, &[YOU, OUT]).to_string()
+}
+
 fn p2(input: &str) -> String {
     let graph = reverse_graph(&parse_input(input));
-
-    const SVR: &str = "svr";
-    const DAC: &str = "dac";
-    const FFT: &str = "fft";
-    const OUT: &str = "out";
 
     [[SVR, DAC, FFT, OUT], [SVR, FFT, DAC, OUT]]
         .into_iter()
