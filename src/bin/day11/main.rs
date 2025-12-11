@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet};
 const ACTUAL_INPUT: &str = include_str!("../../../actual_inputs/2025/11/input.txt");
 
 type Graph = HashMap<String, Vec<String>>;
+struct ReverseDAG(HashMap<String, Vec<String>>);
 
 fn parse_input(input: &str) -> Graph {
     input
@@ -73,7 +74,7 @@ fn p1(input: &str) -> String {
         .to_string()
 }
 
-fn reverse_graph(graph: &Graph) -> Graph {
+fn reverse_graph(graph: &Graph) -> ReverseDAG {
     let mut new_graph = Graph::new();
 
     graph.iter().for_each(|(node, children)| {
@@ -85,19 +86,23 @@ fn reverse_graph(graph: &Graph) -> Graph {
         });
     });
 
-    new_graph
+    ReverseDAG(new_graph)
 }
 
-fn traverse_to(graph: &Graph, src: String, src_count: u64, dest: String) -> u64 {
-    fn traverse(graph: &Graph, node_count: &mut HashMap<String, u64>, current_node: String) -> u64 {
-        if let Some(count) = node_count.get(&current_node) {
+fn traverse_a_to_b(graph: &ReverseDAG, src: &str, src_count: u64, dest: &str) -> u64 {
+    fn visit<'a>(
+        graph: &'a ReverseDAG,
+        node_count: &mut HashMap<&'a str, u64>,
+        current_node: &'a str,
+    ) -> u64 {
+        if let Some(count) = node_count.get(current_node) {
             return *count;
         }
         let count = {
-            match graph.get(&current_node) {
+            match graph.0.get(current_node) {
                 Some(children) => children
                     .iter()
-                    .map(|child| traverse(graph, node_count, child.to_string()))
+                    .map(|child| visit(graph, node_count, child))
                     .sum(),
                 None => 0,
             }
@@ -107,25 +112,30 @@ fn traverse_to(graph: &Graph, src: String, src_count: u64, dest: String) -> u64 
         count
     }
 
-    traverse(
-        graph,
-        &mut [(src.to_string(), src_count)].into_iter().collect(),
-        dest.to_string(),
-    )
+    visit(graph, &mut [(src, src_count)].into_iter().collect(), dest)
+}
+
+fn traverse_path(graph: &ReverseDAG, path: &[&str]) -> u64 {
+    path.iter()
+        .zip(path.iter().skip(1))
+        .fold(1, |acc, (src, dest)| {
+            traverse_a_to_b(&graph, src, acc, dest)
+        })
 }
 
 fn p2(input: &str) -> String {
     let graph = reverse_graph(&parse_input(input));
 
-    let svr_to_dac = traverse_to(&graph, "svr".to_string(), 1, "dac".to_string());
-    let dac_to_fft = traverse_to(&graph, "dac".to_string(), svr_to_dac, "fft".to_string());
-    let fft_to_out = traverse_to(&graph, "fft".to_string(), dac_to_fft, "out".to_string());
+    const SVR: &str = "svr";
+    const DAC: &str = "dac";
+    const FFT: &str = "fft";
+    const OUT: &str = "out";
 
-    let svr_to_fft = traverse_to(&graph, "svr".to_string(), 1, "fft".to_string());
-    let fft_to_dac = traverse_to(&graph, "fft".to_string(), svr_to_fft, "dac".to_string());
-    let dac_to_out = traverse_to(&graph, "dac".to_string(), fft_to_dac, "out".to_string());
-
-    (fft_to_out + dac_to_out).to_string()
+    [[SVR, DAC, FFT, OUT], [SVR, FFT, DAC, OUT]]
+        .into_iter()
+        .map(|path| traverse_path(&graph, &path))
+        .sum::<u64>()
+        .to_string()
 }
 
 fn main() {
