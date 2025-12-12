@@ -2819,9 +2819,9 @@ mod tests {
 
         // test with is_troll_input: false, because sample input
         // is not troll input
-        assert_eq!(can_fit(&input.regions[0], &input.presents, false), true);
-        assert_eq!(can_fit(&input.regions[1], &input.presents, false), true);
-        assert_eq!(can_fit(&input.regions[2], &input.presents, false), false);
+        assert!(can_fit(&input.regions[0], &input.presents, false));
+        assert!(can_fit(&input.regions[1], &input.presents, false));
+        assert!(!can_fit(&input.regions[2], &input.presents, false));
     }
 
     #[test]
