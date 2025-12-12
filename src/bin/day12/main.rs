@@ -320,7 +320,7 @@ impl RegionGrid {
     }
 }
 
-fn can_fit(region: &Region, presents: &[Present]) -> bool {
+fn can_fit(region: &Region, presents: &[Present], is_troll_input: bool) -> bool {
     let presents_needed_area = presents
         .iter()
         .map(|present| present.area())
@@ -330,6 +330,19 @@ fn can_fit(region: &Region, presents: &[Present]) -> bool {
 
     if region.size.0 * region.size.1 < presents_needed_area {
         return false;
+    }
+
+    // part 1 actual input is a troll input...
+    // the input is carefully crafted such that, as long as the region's area is bigger
+    // than the area of all presents combined, there will always be a solution, so there's
+    // no need to go through DFS, just return true here. This obviously is not always true,
+    // hence part 1 actual input is troll because we aren't told about this special behavior,
+    // so we are tricked to implement DFS to handle it.
+    //
+    // note that part 1 sample input is not troll input, so will still need the DFS
+    // logic
+    if is_troll_input {
+        return true;
     }
 
     fn try_fit_next(
@@ -380,14 +393,18 @@ fn can_fit(region: &Region, presents: &[Present]) -> bool {
     )
 }
 
-fn p1(input: &str) -> String {
+fn solve_p1(input: &str, is_troll_input: bool) -> String {
     let input = Input::parse(input);
     input
         .regions
         .iter()
-        .filter(|region| can_fit(region, &input.presents))
+        .filter(|region| can_fit(region, &input.presents, is_troll_input))
         .count()
         .to_string()
+}
+
+fn p1(input: &str) -> String {
+    solve_p1(input, true)
 }
 
 fn main() {
@@ -2800,18 +2817,30 @@ mod tests {
     fn test_can_fit() {
         let input = Input::parse(SAMPLE_INPUT);
 
-        assert_eq!(can_fit(&input.regions[0], &input.presents), true);
-        assert_eq!(can_fit(&input.regions[1], &input.presents), true);
-        assert_eq!(can_fit(&input.regions[2], &input.presents), false);
+        // test with is_troll_input: false, because sample input
+        // is not troll input
+        assert_eq!(can_fit(&input.regions[0], &input.presents, false), true);
+        assert_eq!(can_fit(&input.regions[1], &input.presents, false), true);
+        assert_eq!(can_fit(&input.regions[2], &input.presents, false), false);
     }
 
     #[test]
     fn test_p1_sample() {
-        assert_eq!(p1(SAMPLE_INPUT), "2");
+        // test with is_troll_input: false, because sample input
+        // is not troll input
+        assert_eq!(solve_p1(SAMPLE_INPUT, false), "2");
     }
 
     #[test]
     fn test_p1_actual() {
         assert_eq!(p1(ACTUAL_INPUT), "427");
+    }
+
+    #[test]
+    fn test_p1_actual_treat_as_non_troll() {
+        // to ensure the correctness of our implementation,
+        // treat actual input as non-troll, even though
+        // it is
+        assert_eq!(solve_p1(ACTUAL_INPUT, false), "427");
     }
 }
